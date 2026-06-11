@@ -1,3 +1,4 @@
+import cloudinaryImageUpload from "../config/cloudinary.js";
 import generateToken from "../config/token.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
@@ -9,6 +10,11 @@ export const signUp = async (req, res) => {
     if (!firstName || !lastName || !email || !userName || !password) {
       return res.status(400).send({ message: "All fields are required" });
     }
+    let profileImage;
+    if (req.file) {
+      profileImage = await cloudinaryImageUpload(req.file.path);
+    }
+    console.log(req.file);
 
     const existUser = await User.findOne({ email });
 
@@ -24,6 +30,7 @@ export const signUp = async (req, res) => {
       email,
       userName,
       password: hashedPassword,
+      profileImage,
     });
 
     let token;
@@ -48,6 +55,7 @@ export const signUp = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         userName: user.userName,
+        profileImage: user.profileImage,
       },
     });
   } catch (error) {
@@ -95,6 +103,7 @@ export const signIn = async (req, res) => {
         lastName: existUser.lastName,
         email: existUser.email,
         userName: existUser.userName,
+        profileImage: existUser.profileImage,
       },
     });
   } catch (error) {
@@ -107,9 +116,37 @@ export const home = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token");
-    res.status(200).send({ message: "User logout successfully" });
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENVIRONMENT == "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "User logout successfully",
+    });
   } catch (error) {
-    res.status(500).send({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+export const getUserData = async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).send({ message: "User not authenticated" });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    return res.status(200).send({ user });
+  } catch (error) {
+    return res.status(500).send({ message: error.message });
   }
 };

@@ -1,11 +1,13 @@
 import React, { use, useState } from "react";
 import { AuthContext } from "../context/AuthContext/AuthContext";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Signin = () => {
-  const { serverUrl } = use(AuthContext);
+  const { serverUrl, userData, setUserData, getUserData } = use(AuthContext);
   const [email, setEmail] = useState(null);
   const [password, setPassword] = useState(null);
+  const navigate = useNavigate();
   const handleSignin = async (e) => {
     e.preventDefault();
     try {
@@ -17,10 +19,15 @@ const Signin = () => {
         },
         { withCredentials: true },
       );
-      alert(data.data.message);
+      // alert(data.data.message);
       //reset form
-      // console.log(data);
-      e.target.reset();
+      setUserData(data.data.user);
+      console.log(data);
+      await getUserData();
+      if (userData) {
+        navigate("/home");
+      }
+      // e.target.reset();
     } catch (error) {
       alert(error.response.data.message);
     }

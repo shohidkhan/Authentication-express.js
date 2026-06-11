@@ -2,36 +2,48 @@ import React, { use, useRef, useState } from "react";
 import avatar from "../assets/download.png";
 import { AuthContext } from "../context/AuthContext/AuthContext";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-  const { serverUrl } = use(AuthContext);
+  const { serverUrl, userData, setUserData, getUserData } = use(AuthContext);
   const [firstName, setFirstName] = useState(null);
   const [lastName, setLastName] = useState(null);
   const [email, setEmail] = useState(null);
   const [userName, setUserName] = useState(null);
   const [password, setPassword] = useState(null);
   const fileRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
     try {
-      const data = await axios.post(
-        `${serverUrl}/signup`,
-        {
-          firstName,
-          lastName,
-          email,
-          userName,
-          password,
+      const formData = new FormData();
+      if (backendPic) {
+        formData.append("profileImage", backendPic);
+      }
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("email", email);
+      formData.append("userName", userName);
+      formData.append("password", password);
+      const data = await axios.post(`${serverUrl}/signup`, formData, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-        { withCredentials: true },
-      );
-      alert(data.data.message);
+      });
+      // alert(data.data.message);
       //reset form
-      e.target.reset();
+      await getUserData();
+      setUserData(data.data.user);
+
+      navigate("/home");
+
+      // e.target.reset();
+      console.log(data);
     } catch (error) {
-      console.log(error.message);
+      console.log(error);
     }
   };
   const [profilePic, setProfilePic] = useState(avatar);
